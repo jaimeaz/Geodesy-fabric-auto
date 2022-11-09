@@ -144,6 +144,17 @@ public class GeodesyFabricMod implements ModInitializer {
                                 .executes(context -> geodesyProjectCommand(context,2)))
                             .executes(context -> geodesyProjectCommand(context,1)))
                         .executes(context -> geodesyProjectCommand(context,0)))
+                    .then(literal("cluster").executes(context -> {
+                        try {
+                            GeodesyCore core = getPerPlayerCore(context.getSource().getPlayer());
+                            context.getSource().getServer().execute(() -> core.geodesyCluster());
+                            return SINGLE_SUCCESS;
+                        }
+                        catch (Exception e) {
+                            LOGGER.error("analyze", e);
+                            throw (e);
+                        }
+                    }))
                     .then(literal("assemble").executes(context -> {
                         try {
                             GeodesyCore core = getPerPlayerCore(context.getSource().getPlayer());

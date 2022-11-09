@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static net.minecraft.block.Block.NOTIFY_LISTENERS;
+import static pl.kosma.geodesy.TestKt.test;
 
 public class GeodesyCore {
 
@@ -169,6 +170,10 @@ public class GeodesyCore {
         geodesyProject(null);
         // Advise the user.
         sendCommandFeedback("Now run /geodesy project with your chosen projections.");
+    }
+
+    void geodesyCluster() {
+        sendCommandFeedback(test());
     }
 
     void geodesyAssemble() {
