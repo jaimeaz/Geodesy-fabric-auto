@@ -1,6 +1,8 @@
 package pl.kosma.geodesy;
 
 import com.google.common.collect.Sets;
+import geode.GeodeProjection;
+import geode.StickyBlockType;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.CommandBlockBlockEntity;
 import net.minecraft.block.entity.DropperBlockEntity;
@@ -22,6 +24,10 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import solution.Solution;
+import solution.SolutionGroup;
+import solver.Solver;
+import solver.Vec2;
 
 import javax.annotation.Nullable;
 import java.lang.ref.WeakReference;
@@ -32,14 +38,15 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import static geode.GeodeProjection.fromGeodesyCore;
+import static geode.GeodeProjection.getWorldPos;
 import static net.minecraft.block.Block.NOTIFY_LISTENERS;
-import static pl.kosma.geodesy.TestKt.test;
 
 public class GeodesyCore {
 
     // Build-time adjustments.
     static final int BUILD_MARGIN = 16;
-    static final int WALL_OFFSET = 2;
+    public static final int WALL_OFFSET = 2;
     static final int CLOCK_Y_OFFSET = 13;
     static final Block WORK_AREA_WALL = Blocks.TINTED_GLASS;
     static final Block FULL_BLOCK = Blocks.IRON_BLOCK;
@@ -51,15 +58,15 @@ public class GeodesyCore {
 
     static final Logger LOGGER = LoggerFactory.getLogger("GeodesyCore");
 
-    private World world;
+    public World world;
     @Nullable
-    private IterableBlockBox geode;
+    public IterableBlockBox geode;
     // The following list must contain all budding amethyst in the area.
     @Nullable
-    private List<BlockPos> buddingAmethystPositions;
+    public List<BlockPos> buddingAmethystPositions;
     @Nullable
     // The following list must contain all amethyst clusters in the area.
-    private List<Pair<BlockPos, Direction>> amethystClusterPositions;
+    public List<Pair<BlockPos, Direction>> amethystClusterPositions;
 
     public void geodesyGeodesy() {
         sendCommandFeedback("Welcome to Geodesy!");
@@ -172,8 +179,26 @@ public class GeodesyCore {
         sendCommandFeedback("Now run /geodesy project with your chosen projections.");
     }
 
-    void geodesyCluster() {
-        sendCommandFeedback(test());
+    void geodesyCluster(Direction[] directions) {
+        for (Direction direction: directions) {
+            clusterProjection(direction);
+        }
+    }
+
+    void clusterProjection(Direction direction) {
+        GeodeProjection geodeProjection = fromGeodesyCore(this, direction);
+
+        Solver solver = new Solver();
+        Solution solution = solver.solve(geodeProjection);
+
+        for (SolutionGroup group: solution.getGroups()) {
+            for (Vec2 projectedPos: group.getBlockLocations()) {
+                BlockPos pos = getWorldPos(geode, projectedPos, group.getBlockType(), direction);
+                Block block = StickyBlockType.isHoney(group.getBlockType())? Blocks.HONEY_BLOCK : Blocks.SLIME_BLOCK;
+
+                world.setBlockState(pos, block.getDefaultState(), NOTIFY_LISTENERS);
+            }
+        }
     }
 
     void geodesyAssemble() {
@@ -566,7 +591,7 @@ public class GeodesyCore {
      * @return The position on the wall (with wall offset).
      * @author Kevinthegreat
      */
-    private BlockPos getWallPos(BlockPos blockPos, Direction direction) {
+    public BlockPos getWallPos(BlockPos blockPos, Direction direction) {
         return switch (direction) {
             case SOUTH -> new BlockPos(geode.getMaxX() + WALL_OFFSET, blockPos.getY(), blockPos.getZ());
             case UP -> new BlockPos(blockPos.getX(), geode.getMaxY() + WALL_OFFSET, blockPos.getZ());

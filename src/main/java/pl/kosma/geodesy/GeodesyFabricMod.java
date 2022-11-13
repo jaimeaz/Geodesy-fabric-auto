@@ -144,17 +144,20 @@ public class GeodesyFabricMod implements ModInitializer {
                                 .executes(context -> geodesyProjectCommand(context,2)))
                             .executes(context -> geodesyProjectCommand(context,1)))
                         .executes(context -> geodesyProjectCommand(context,0)))
-                    .then(literal("cluster").executes(context -> {
-                        try {
-                            GeodesyCore core = getPerPlayerCore(context.getSource().getPlayer());
-                            context.getSource().getServer().execute(() -> core.geodesyCluster());
-                            return SINGLE_SUCCESS;
-                        }
-                        catch (Exception e) {
-                            LOGGER.error("analyze", e);
-                            throw (e);
-                        }
-                    }))
+                    .then(literal("cluster")
+                            .then(argument("direction1", DirectionArgumentType.direction())
+                                    .then(argument("direction2", DirectionArgumentType.direction())
+                                            .then(argument("direction3", DirectionArgumentType.direction())
+                                                    .then(argument("direction4", DirectionArgumentType.direction())
+                                                            .then(argument("direction5", DirectionArgumentType.direction())
+                                                                    .then(argument("direction6", DirectionArgumentType.direction())
+                                                                            .executes(context -> geodesyClusterCommand(context,6)))
+                                                                    .executes(context -> geodesyClusterCommand(context,5)))
+                                                            .executes(context -> geodesyClusterCommand(context,4)))
+                                                    .executes(context -> geodesyClusterCommand(context,3)))
+                                            .executes(context -> geodesyClusterCommand(context,2)))
+                                    .executes(context -> geodesyClusterCommand(context,1)))
+                            .executes(context -> geodesyClusterCommand(context,0)))
                     .then(literal("assemble").executes(context -> {
                         try {
                             GeodesyCore core = getPerPlayerCore(context.getSource().getPlayer());
@@ -192,6 +195,22 @@ public class GeodesyFabricMod implements ModInitializer {
             return SINGLE_SUCCESS;
         } catch (Exception e) {
             LOGGER.error("project", e);
+            throw (e);
+        }
+    }
+
+    private int geodesyClusterCommand(CommandContext<ServerCommandSource> context, int argumentIndex) {
+        try {
+            GeodesyCore core = getPerPlayerCore(context.getSource().getPlayer());
+            Set<Direction> directions = new LinkedHashSet<>(argumentIndex);
+            for (int i = 1; i <= argumentIndex; i++) {
+                directions.add(DirectionArgumentType.getDirection(context, "direction" + i));
+            }
+            context.getSource().getServer().execute(() -> core.geodesyCluster(directions.isEmpty() ? null : directions.toArray(new Direction[argumentIndex])));
+            return SINGLE_SUCCESS;
+        }
+        catch (Exception e) {
+            LOGGER.error("cluster", e);
             throw (e);
         }
     }

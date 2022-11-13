@@ -1,9 +1,15 @@
 package geode
 
-import solver.Vec2
+import geode.StickyBlockType.Companion.isOffset
+import net.minecraft.block.Blocks
+import net.minecraft.util.math.BlockPos
+import net.minecraft.util.math.Direction
+import pl.kosma.geodesy.GeodesyCore
+import pl.kosma.geodesy.GeodesyCore.WALL_OFFSET
+import pl.kosma.geodesy.IterableBlockBox
 import solution.ANSI_GRAY
 import solution.ANSI_RESET
-import java.io.File
+import solver.Vec2
 
 enum class BlockType {
     AIR,
@@ -69,31 +75,52 @@ class GeodeProjection(private val cells: Map<Vec2, BlockType>) {
     }
 
     companion object {
-        fun fromFile(path: String): List<GeodeProjection> {
-            val geodes = mutableListOf<GeodeProjection>()
 
-            val lines = File(path).readLines()
-            var curr = mutableMapOf<Vec2, BlockType>()
-            var row = 0
-            for (line in lines) {
-                if (line == "") {
-                    geodes.add(GeodeProjection(curr))
-                    curr = mutableMapOf()
-                    row = 0
-                    continue
-                }
+        private fun getProjectedPos(geodeBox: IterableBlockBox, blockPos: BlockPos, direction: Direction): Vec2 {
+            return when (direction) {
+                Direction.EAST, Direction.WEST -> Vec2(geodeBox.maxY - blockPos.y, geodeBox.maxZ - blockPos.z)
+                Direction.UP, Direction.DOWN -> Vec2(geodeBox.maxX - blockPos.x, geodeBox.maxZ - blockPos.z)
+                Direction.SOUTH, Direction.NORTH -> Vec2(geodeBox.maxX - blockPos.x, geodeBox.maxY - blockPos.y)
+            }
+        }
 
-                for ((i, block) in line.filterIndexed { i, _ -> i % 2 == 0 }.withIndex()) {
-                    curr[Vec2(i, row)] = when (block) {
-                        '.' -> BlockType.CRYSTAL
-                        '#' -> BlockType.BUD
-                        else -> BlockType.AIR
-                    }
-                }
-                row += 1
+        @JvmStatic
+        fun getWorldPos(geodeBox: IterableBlockBox, projectedPos: Vec2, type: StickyBlockType, direction: Direction): BlockPos {
+            val offset = if(isOffset(type)) WALL_OFFSET + 1 else WALL_OFFSET + 2
+            return when (direction) {
+                Direction.EAST -> BlockPos(geodeBox.maxX + offset, geodeBox.maxY - projectedPos.x, geodeBox.maxZ - projectedPos.y)
+                Direction.WEST -> BlockPos(geodeBox.minX - offset, geodeBox.maxY - projectedPos.x, geodeBox.maxZ - projectedPos.y)
+                Direction.UP -> BlockPos(geodeBox.maxX - projectedPos.x, geodeBox.maxY + offset, geodeBox.maxZ - projectedPos.y)
+                Direction.DOWN -> BlockPos(geodeBox.maxX - projectedPos.x, geodeBox.maxY - offset, geodeBox.maxZ - projectedPos.y)
+                Direction.SOUTH -> BlockPos(geodeBox.maxX - projectedPos.x, geodeBox.maxY - projectedPos.y, geodeBox.maxZ + offset)
+                Direction.NORTH -> BlockPos(geodeBox.maxX - projectedPos.x, geodeBox.maxY - projectedPos.y, geodeBox.maxZ - offset)
+            }
+        }
+
+        @JvmStatic
+        fun fromGeodesyCore(geodeCore: GeodesyCore, direction: Direction): GeodeProjection {
+            val cells = mutableMapOf<Vec2, BlockType>()
+
+            for (blockPos in geodeCore.buddingAmethystPositions!!) {
+                val projectedPos: Vec2 = getProjectedPos(geodeCore.geode!!, blockPos, direction)
+                cells[projectedPos] = BlockType.BUD
             }
 
-            return geodes
+            for (blockPosDirectionPair in geodeCore.amethystClusterPositions!!) {
+                if (geodeCore.world.getBlockState(blockPosDirectionPair.left).block === Blocks.AMETHYST_CLUSTER) {
+                    val projectedPos: Vec2 = getProjectedPos(geodeCore.geode!!, blockPosDirectionPair.left, direction)
+                    if (!cells.containsKey(projectedPos)) cells[projectedPos] = BlockType.CRYSTAL
+                }
+            }
+
+            for (x in 0 until 16) {
+                for (y in 0 until 16) {
+                    val pos = Vec2(x, y)
+                    if (!cells.containsKey(pos)) cells[pos] = BlockType.AIR
+                }
+            }
+
+            return GeodeProjection(cells)
         }
     }
 }

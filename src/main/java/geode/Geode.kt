@@ -12,6 +12,17 @@ enum class StickyBlockType {
     SLIME_OFFSET,
     HONEY,
     HONEY_OFFSET;
+
+    companion object {
+        @JvmStatic
+        fun isHoney(block: StickyBlockType): Boolean {
+            return block == HONEY || block == HONEY_OFFSET
+        }
+
+        fun isOffset(block: StickyBlockType): Boolean {
+            return block == SLIME_OFFSET || block == HONEY_OFFSET
+        }
+    }
 }
 
 class Geode(val buds: List<Vec3>) {

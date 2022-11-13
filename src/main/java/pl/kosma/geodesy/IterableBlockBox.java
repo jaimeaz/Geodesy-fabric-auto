@@ -6,7 +6,7 @@ import net.minecraft.util.math.Direction;
 
 import java.util.function.Consumer;
 
-class IterableBlockBox extends BlockBox {
+public class IterableBlockBox extends BlockBox {
 
     public IterableBlockBox(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         super(minX, minY, minZ, maxX, maxY, maxZ);

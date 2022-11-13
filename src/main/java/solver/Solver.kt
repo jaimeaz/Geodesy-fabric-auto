@@ -6,13 +6,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import solution.Solution
-import solution.Solver
 import java.util.PriorityQueue
 
 const val PUSH_LIMIT = 12
 
-class IterniamSolver(val tries: Int = 1) : Solver {
-    override fun name() = "Iterniam Solver"
+class Solver(val tries: Int = 1) {
 
     private fun calcAverageDist(cell: Vec2, solution: Solution): Double {
         var totalDist = 0.0
@@ -48,7 +46,7 @@ class IterniamSolver(val tries: Int = 1) : Solver {
         return map
     }
 
-    fun oneSolution(proj: GeodeProjection): Solution {
+    private fun oneSolution(proj: GeodeProjection): Solution {
         val solution = Solution(proj, mutableListOf())
 
         val unassigned = proj.crystals().toMutableSet()
@@ -93,7 +91,7 @@ class IterniamSolver(val tries: Int = 1) : Solver {
         (0 until times).map { async(Dispatchers.Default) { f() } }.map { it.await() }
     }
 
-    override fun solve(proj: GeodeProjection): Solution {
+    fun solve(proj: GeodeProjection): Solution {
         var solution = oneSolution(proj)
 
         prepeat(tries - 1) {
