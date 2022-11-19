@@ -196,26 +196,4 @@ data class Solution(val proj: GeodeProjection, var groups: MutableList<SolutionG
     fun max(other: Solution) = if (this.betterThan(other)) this else other
     fun min(other: Solution) = if (this.betterThan(other)) other else this
 
-    companion object {
-        private fun p(num: Double): String =
-            "${(num * 10000).roundToInt().toDouble() / 100}"
-
-        private fun r(num: Double): String =
-            "${(num * 100).roundToInt().toDouble() / 100}"
-
-        @JvmStatic
-        fun show(solution: Solution?) {
-            if (solution != null && solution.groupCount() != 0) {
-                println(
-                    "Solution: ${p(solution.crystalPercentage())}% crystals, ${solution.groupCount()} groups, ${solution.stickyBlockCount()} blocks for ${solution.crystalCount()} crystals (${
-                        r(
-                            solution.crystalCount().toDouble() / solution.groupCount()
-                        )
-                    } Crystals / Group)"
-                )
-                solution.prettyPrint(true)
-            }
-        }
-    }
-
 }
